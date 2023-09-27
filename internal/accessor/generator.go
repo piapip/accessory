@@ -178,6 +178,9 @@ func (g *generator) setupParameters(
 	field *Field,
 ) *methodGenParameters {
 	typeName := g.typeName(pkg.Types, field.Type)
+	fmt.Println("pkg.Types: ", pkg.Types)
+	fmt.Println("field.Type: ", field.Type)
+	fmt.Println("typeName: ", typeName)
 	getter, setter := g.methodNames(field)
 	return &methodGenParameters{
 		Receiver:     g.receiverName(st.Name),
@@ -205,7 +208,7 @@ func (g *generator) methodNames(field *Field) (getter, setter string) {
 	if getterName := field.Tag.Getter; getterName != nil && *getterName != "" {
 		getter = *getterName
 	} else {
-		getter = cases.Title(language.Und, cases.NoLower).String(field.Name)
+		getter = "Get" + cases.Title(language.Und, cases.NoLower).String(field.Name)
 	}
 
 	if setterName := field.Tag.Setter; setterName != nil && *setterName != "" {
@@ -219,6 +222,8 @@ func (g *generator) methodNames(field *Field) (getter, setter string) {
 
 func (g *generator) typeName(pkg *types.Package, t types.Type) string {
 	return types.TypeString(t, func(p *types.Package) string {
+		fmt.Println("pkg: ", pkg)
+		fmt.Println("p: ", p)
 		// type is defined in the same package
 		if pkg == p {
 			return ""
@@ -245,7 +250,7 @@ func (g *generator) zeroValue(t types.Type, typeString string) string {
 	case *types.Signature:
 		return "nil"
 	case *types.Struct:
-		return typeString + "{}"
+		return "nil"
 	case *types.Basic:
 		info := types.Typ[t.Kind()].Info()
 		switch {

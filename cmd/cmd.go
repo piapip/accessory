@@ -64,7 +64,8 @@ func Execute(fs afero.Fs, args []string) {
 	}
 
 	if !isDir(dir) {
-		fmt.Fprintln(os.Stderr, "Specified argument is not a directory.")
+		errorStr := fmt.Sprintf("Specified argument (%s) is not a directory.", dir)
+		fmt.Fprintln(os.Stderr, errorStr)
 		flags.Usage()
 		os.Exit(1)
 	}
