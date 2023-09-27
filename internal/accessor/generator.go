@@ -51,6 +51,14 @@ func newGenerator(fs afero.Fs, pkg *Package, options ...Option) *generator {
 func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 	g := newGenerator(fs, pkg, options...)
 
+	fmt.Printf("starting pkg\n")
+	for _, field := range pkg.Structs[0].Fields {
+		fmt.Printf("field: %+v\n", field)
+		if field.Tag != nil {
+			fmt.Printf("getter: %s\n", *(field.Tag.Getter))
+		}
+	}
+
 	accessors := make([]string, 0)
 	usedPkgs := make([]string, 0, len(pkg.Imports))
 
