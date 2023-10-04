@@ -32,7 +32,17 @@ type methodGenParameters struct {
 	SetterMethod string
 	Type         string
 	ZeroValue    string // used only when generating getter
+	EmptyValue   string // used only when generating stuff for tester
 	Lock         string
+}
+
+type testGenParameters struct {
+	Struct        string
+	Package       string
+	WantStruct    string
+	AssertTest    string
+	NilTestData   string
+	EmptyTestData string
 }
 
 func newGenerator(fs afero.Fs, pkg *Package, options ...Option) *generator {
@@ -62,17 +72,31 @@ func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 	accessors := make([]string, 0)
 	usedPkgs := make([]string, 0, len(pkg.Imports))
 
+	testParameters := &testGenParameters{
+		Struct: pkg.Structs[0].Name,
+		// this package is hard coded.
+		Package: "models",
+	}
+
+	// for iStruct, st := range pkg.Structs {
 	for _, st := range pkg.Structs {
 		if st.Name != g.typ {
 			continue
 		}
 
+		// for iField, field := range st.Fields {
 		for _, field := range st.Fields {
 			if field.Tag == nil {
 				continue
 			}
 
 			params := g.setupParameters(pkg, st, field)
+
+			// // I only generate getters for one struct at the time
+			// // so only check this once
+			// if iStruct == 0 && iField == 0 {
+			// 	testParameters.Struct = params.Struct
+			// }
 
 			if field.Tag.Getter != nil {
 				getter, err := g.generateGetter(params)
@@ -89,6 +113,11 @@ func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 				accessors = append(accessors, setter)
 			}
 
+			err := g.updateTestComponent(params, testParameters)
+			if err != nil {
+				return err
+			}
+
 			replacer := strings.NewReplacer(
 				"[]", "", // trim []
 				"*", "", // trim *
@@ -99,6 +128,13 @@ func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 			}
 		}
 	}
+
+	generatedTest, err := g.assembleTest(testParameters)
+	if err != nil {
+		return err
+	}
+
+	accessors = append(accessors, generatedTest)
 
 	imports := g.generateImportStrings(pkg.Imports, usedPkgs)
 	return g.writer.write(pkg.Name, imports, accessors)
@@ -160,17 +196,122 @@ func (g *generator) generateGetter(
 		`
 	}
 
-	var tpl = `
+	var getterTemplate = `
+	// {{.GetterMethod}} returns the {{.Struct}}'s {{.Field}}.
 	func ({{.Receiver}} *{{.Struct}}) {{.GetterMethod}}() {{.Type}} {
 		if {{.Receiver}} == nil {
 			return {{.ZeroValue}}
 		}
+
 		` +
 		lockingCode + // inject locing code
 		`return {{.Receiver}}.{{.Field}}
 	}`
 
-	t := template.Must(template.New("getter").Parse(tpl))
+	t := template.Must(template.New("getter").Parse(getterTemplate))
+	buf := new(bytes.Buffer)
+
+	if err := t.Execute(buf, params); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// updateTestComponent fills in the content using for testing.
+func (g *generator) updateTestComponent(
+	params *methodGenParameters,
+	testParameters *testGenParameters,
+) error {
+	var (
+		wantStructTemplate = `want{{.Field}} {{.Type}}`
+		assertTemplate     = `got{{.Field}} := ctx.testData.args.Get{{.Field}}()
+			assert.Equal(t, ctx.testData.want{{.Field}}, got{{.Field}})
+		`
+		nilTestDataTemplate   = `want{{.Field}}: {{.ZeroValue}},`
+		emptyTestDataTemplate = `want{{.Field}}: {{.EmptyValue}},`
+	)
+
+	wantStructTemplateExecutor := template.Must(template.New("wantStruct").Parse(wantStructTemplate))
+	bufWantStruct := new(bytes.Buffer)
+
+	if err := wantStructTemplateExecutor.Execute(bufWantStruct, params); err != nil {
+		return err
+	}
+
+	assertTemplateExecutor := template.Must(template.New("assert").Parse(assertTemplate))
+	bufAssert := new(bytes.Buffer)
+
+	if err := assertTemplateExecutor.Execute(bufAssert, params); err != nil {
+		return err
+	}
+
+	nilTestDataTemplateExecutor := template.Must(template.New("nilTest").Parse(nilTestDataTemplate))
+	bufNilTestData := new(bytes.Buffer)
+
+	if err := nilTestDataTemplateExecutor.Execute(bufNilTestData, params); err != nil {
+		return err
+	}
+
+	emptyTestDataExecutor := template.Must(template.New("emptyTest").Parse(emptyTestDataTemplate))
+	bufEmptyTestData := new(bytes.Buffer)
+
+	if err := emptyTestDataExecutor.Execute(bufEmptyTestData, params); err != nil {
+		return err
+	}
+
+	testParameters.WantStruct = testParameters.WantStruct + bufWantStruct.String() + "\n"
+	testParameters.AssertTest = testParameters.AssertTest + bufAssert.String() + "\n"
+	testParameters.NilTestData = testParameters.NilTestData + bufNilTestData.String() + "\n"
+	testParameters.EmptyTestData = testParameters.EmptyTestData + bufEmptyTestData.String() + "\n"
+
+	return nil
+}
+
+func (g *generator) assembleTest(
+	params *testGenParameters,
+) (string, error) {
+	var getTestTemplate = `
+	func Test{{.Struct}}_GetFunctions(t *testing.T) {
+		type want struct {
+			args *{{.Package}}.{{.Struct}}
+			{{.WantStruct}}
+		}
+	
+		type Context struct {
+			testData *want
+		}
+	
+		contextInitiateFunction := func(t *testing.T) *Context {
+			return &Context{}
+		}
+
+		gt.Begin(t,
+			contextInitiateFunction,
+			gt.Run("Get functions return proper value", func(t *testing.T, ctx *Context) {
+				{{.AssertTest}}
+			}).
+				Using("given nil value", func(t *testing.T, ctx *Context) {
+					ctx.testData = &want{
+						args: nil,
+						{{.NilTestData}}
+					}
+				}).
+				Using("given empty value", func(t *testing.T, ctx *Context) {
+					ctx.testData = &want{
+						args: &{{.Package}}.{{.Struct}}{},
+						{{.EmptyTestData}}
+					}
+				}).
+				Using("given NON nil value", func(t *testing.T, ctx *Context) {
+					ctx.testData = &want{
+
+					}
+				}),
+		)
+	}`
+
+	t := template.Must(template.New("tester").Parse(getTestTemplate))
 	buf := new(bytes.Buffer)
 
 	if err := t.Execute(buf, params); err != nil {
@@ -198,6 +339,7 @@ func (g *generator) setupParameters(
 		SetterMethod: setter,
 		Type:         typeName,
 		ZeroValue:    g.zeroValue(field.Type, typeName),
+		EmptyValue:   g.emptyValue(field.Type, typeName),
 		Lock:         g.lock,
 	}
 }
@@ -259,6 +401,45 @@ func (g *generator) zeroValue(t types.Type, typeString string) string {
 		return "nil"
 	case *types.Struct:
 		return "nil"
+	case *types.Basic:
+		info := types.Typ[t.Kind()].Info()
+		switch {
+		case types.IsNumeric&info != 0:
+			return "0"
+		case types.IsBoolean&info != 0:
+			return "false"
+		case types.IsString&info != 0:
+			return `""`
+		}
+	case *types.Named:
+		if types.Identical(t, types.Universe.Lookup("error").Type()) {
+			return "nil"
+		}
+
+		return g.zeroValue(t.Underlying(), typeString)
+	}
+
+	return "nil"
+}
+
+func (g *generator) emptyValue(t types.Type, typeString string) string {
+	switch t := t.(type) {
+	case *types.Pointer:
+		return "nil"
+	case *types.Array:
+		return "nil"
+	case *types.Slice:
+		return "nil"
+	case *types.Chan:
+		return "nil"
+	case *types.Interface:
+		return "nil"
+	case *types.Map:
+		return "nil"
+	case *types.Signature:
+		return "nil"
+	case *types.Struct:
+		return "&" + typeString + "{}"
 	case *types.Basic:
 		info := types.Typ[t.Kind()].Info()
 		switch {

@@ -89,7 +89,12 @@ func parseFields(fset *token.FileSet, st *types.Struct) []*Field {
 func parseTag(tag string) *Tag {
 	tagStr, ok := reflect.StructTag(strings.Trim(tag, "`")).Lookup(accessorTag)
 	if !ok {
-		return nil
+		// Always generate getter even without the accessorTag
+		emptyString := ""
+
+		return &Tag{
+			Getter: &emptyString,
+		}
 	}
 
 	var getter, setter *string

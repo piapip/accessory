@@ -1,11 +1,9 @@
 package input
 
-import (
-	c "github.com/zeals-co-ltd/zero-api/generated/go/entities/common"
-)
+import "time"
 
-type Tester struct {
-	field1 *c.Card `accessor:"getter"`
-	field2 int32   `accessor:"getter:GetSecondField"`
-	field3 *bool
+type RetentionAvoid struct {
+	AvoidWeekend   bool       `bson:"avoid_weekend"`
+	AvoidStartTime *time.Time `bson:"avoid_start_time"`
+	AvoidEndTime   *time.Time `bson:"avoid_end_time"`
 }

@@ -3,19 +3,83 @@
 package input
 
 import (
-	"github.com/zeals-co-ltd/zero-api/generated/go/entities/common"
+	"time"
 )
 
-func (t *Tester) GetField1() *c.Card {
-	if t == nil {
-		return nil
+// GetAvoidWeekend returns the RetentionAvoid's AvoidWeekend.
+func (r *RetentionAvoid) GetAvoidWeekend() bool {
+	if r == nil {
+		return false
 	}
-	return t.field1
+
+	return r.AvoidWeekend
 }
 
-func (t *Tester) GetSecondField() int32 {
-	if t == nil {
-		return 0
+// GetAvoidStartTime returns the RetentionAvoid's AvoidStartTime.
+func (r *RetentionAvoid) GetAvoidStartTime() *time.Time {
+	if r == nil {
+		return nil
 	}
-	return t.field2
+
+	return r.AvoidStartTime
+}
+
+// GetAvoidEndTime returns the RetentionAvoid's AvoidEndTime.
+func (r *RetentionAvoid) GetAvoidEndTime() *time.Time {
+	if r == nil {
+		return nil
+	}
+
+	return r.AvoidEndTime
+}
+
+func TestRetentionAvoid_GetFunctions(t *testing.T) {
+	type want struct {
+		args               *models.RetentionAvoid
+		wantAvoidWeekend   bool
+		wantAvoidStartTime *time.Time
+		wantAvoidEndTime   *time.Time
+	}
+
+	type Context struct {
+		testData *want
+	}
+
+	contextInitiateFunction := func(t *testing.T) *Context {
+		return &Context{}
+	}
+
+	gt.Begin(t,
+		contextInitiateFunction,
+		gt.Run("Get functions return proper value", func(t *testing.T, ctx *Context) {
+			gotAvoidWeekend := ctx.testData.args.GetAvoidWeekend()
+			assert.Equal(t, ctx.testData.wantAvoidWeekend, gotAvoidWeekend)
+
+			gotAvoidStartTime := ctx.testData.args.GetAvoidStartTime()
+			assert.Equal(t, ctx.testData.wantAvoidStartTime, gotAvoidStartTime)
+
+			gotAvoidEndTime := ctx.testData.args.GetAvoidEndTime()
+			assert.Equal(t, ctx.testData.wantAvoidEndTime, gotAvoidEndTime)
+
+		}).
+			Using("given nil value", func(t *testing.T, ctx *Context) {
+				ctx.testData = &want{
+					args:               nil,
+					wantAvoidWeekend:   false,
+					wantAvoidStartTime: nil,
+					wantAvoidEndTime:   nil,
+				}
+			}).
+			Using("given empty value", func(t *testing.T, ctx *Context) {
+				ctx.testData = &want{
+					args:               &models.RetentionAvoid{},
+					wantAvoidWeekend:   false,
+					wantAvoidStartTime: nil,
+					wantAvoidEndTime:   nil,
+				}
+			}).
+			Using("given NON nil value", func(t *testing.T, ctx *Context) {
+				ctx.testData = &want{}
+			}),
+	)
 }
