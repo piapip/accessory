@@ -6,39 +6,50 @@ import (
 	"time"
 )
 
-// GetAvoidWeekend returns the RetentionAvoid's AvoidWeekend.
-func (r *RetentionAvoid) GetAvoidWeekend() bool {
-	if r == nil {
-		return false
+// GetTimeTransition returns the DeliveryTiming's TimeTransition.
+func (d *DeliveryTiming) GetTimeTransition() int32 {
+	if d == nil {
+		return 0
 	}
 
-	return r.AvoidWeekend
+	return d.TimeTransition
 }
 
-// GetAvoidStartTime returns the RetentionAvoid's AvoidStartTime.
-func (r *RetentionAvoid) GetAvoidStartTime() *time.Time {
-	if r == nil {
+// GetNumber returns the DeliveryTiming's Number.
+func (d *DeliveryTiming) GetNumber() *int64 {
+	if d == nil {
 		return nil
 	}
 
-	return r.AvoidStartTime
+	return d.Number
 }
 
-// GetAvoidEndTime returns the RetentionAvoid's AvoidEndTime.
-func (r *RetentionAvoid) GetAvoidEndTime() *time.Time {
-	if r == nil {
+// GetTimeUnit returns the DeliveryTiming's TimeUnit.
+func (d *DeliveryTiming) GetTimeUnit() int32 {
+	if d == nil {
+		return 0
+	}
+
+	return d.TimeUnit
+}
+
+// GetDeliveryTime returns the DeliveryTiming's DeliveryTime.
+func (d *DeliveryTiming) GetDeliveryTime() *time.Time {
+	if d == nil {
 		return nil
 	}
 
-	return r.AvoidEndTime
+	return d.DeliveryTime
 }
 
-func TestRetentionAvoid_GetFunctions(t *testing.T) {
+func TestDeliveryTiming_GetFunctions(t *testing.T) {
 	type want struct {
-		args               *models.RetentionAvoid
-		wantAvoidWeekend   bool
-		wantAvoidStartTime *time.Time
-		wantAvoidEndTime   *time.Time
+		args               *models.DeliveryTiming
+		wantTimeTransition int32
+		wantNumber         *int64
+		wantTimeUnit       int32
+		wantDeliveryTime   *time.Time
+		wantProto          *replaceMe.DeliveryTiming
 	}
 
 	type Context struct {
@@ -52,30 +63,45 @@ func TestRetentionAvoid_GetFunctions(t *testing.T) {
 	gt.Begin(t,
 		contextInitiateFunction,
 		gt.Run("Get functions return proper value", func(t *testing.T, ctx *Context) {
-			gotAvoidWeekend := ctx.testData.args.GetAvoidWeekend()
-			assert.Equal(t, ctx.testData.wantAvoidWeekend, gotAvoidWeekend)
+			// GET functions
+			gotTimeTransition := ctx.testData.args.GetTimeTransition()
+			assert.Equal(t, ctx.testData.wantTimeTransition, gotTimeTransition)
 
-			gotAvoidStartTime := ctx.testData.args.GetAvoidStartTime()
-			assert.Equal(t, ctx.testData.wantAvoidStartTime, gotAvoidStartTime)
+			gotNumber := ctx.testData.args.GetNumber()
+			assert.Equal(t, ctx.testData.wantNumber, gotNumber)
 
-			gotAvoidEndTime := ctx.testData.args.GetAvoidEndTime()
-			assert.Equal(t, ctx.testData.wantAvoidEndTime, gotAvoidEndTime)
+			gotTimeUnit := ctx.testData.args.GetTimeUnit()
+			assert.Equal(t, ctx.testData.wantTimeUnit, gotTimeUnit)
 
+			gotDeliveryTime := ctx.testData.args.GetDeliveryTime()
+			assert.Equal(t, ctx.testData.wantDeliveryTime, gotDeliveryTime)
+
+			// Convert from models to Proto.
+			gotProto := ctx.testData.args.ToProto()
+			assert.Equal(t, ctx.testData.wantProto, gotProto)
+
+			// Then convert from Proto back to model
+			gotModel := models.ProtoToRetentionAvoid(gotProto)
+			assert.Equal(t, ctx.testData.args, gotModel)
 		}).
 			Using("given nil value", func(t *testing.T, ctx *Context) {
 				ctx.testData = &want{
 					args:               nil,
-					wantAvoidWeekend:   false,
-					wantAvoidStartTime: nil,
-					wantAvoidEndTime:   nil,
+					wantTimeTransition: 0,
+					wantNumber:         nil,
+					wantTimeUnit:       0,
+					wantDeliveryTime:   nil,
+					wantProto:          nil,
 				}
 			}).
 			Using("given empty value", func(t *testing.T, ctx *Context) {
 				ctx.testData = &want{
-					args:               &models.RetentionAvoid{},
-					wantAvoidWeekend:   false,
-					wantAvoidStartTime: nil,
-					wantAvoidEndTime:   nil,
+					args:               &models.DeliveryTiming{},
+					wantTimeTransition: 0,
+					wantNumber:         nil,
+					wantTimeUnit:       0,
+					wantDeliveryTime:   nil,
+					wantProto:          &replaceMe.DeliveryTiming{},
 				}
 			}).
 			Using("given NON nil value", func(t *testing.T, ctx *Context) {

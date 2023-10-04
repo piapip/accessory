@@ -260,10 +260,17 @@ func (g *generator) updateTestComponent(
 		return err
 	}
 
-	testParameters.WantStruct = testParameters.WantStruct + bufWantStruct.String() + "\n"
-	testParameters.AssertTest = testParameters.AssertTest + bufAssert.String() + "\n"
-	testParameters.NilTestData = testParameters.NilTestData + bufNilTestData.String() + "\n"
-	testParameters.EmptyTestData = testParameters.EmptyTestData + bufEmptyTestData.String() + "\n"
+	if testParameters.WantStruct == "" {
+		testParameters.WantStruct = testParameters.WantStruct + bufWantStruct.String()
+		testParameters.AssertTest = testParameters.AssertTest + bufAssert.String()
+		testParameters.NilTestData = testParameters.NilTestData + bufNilTestData.String()
+		testParameters.EmptyTestData = testParameters.EmptyTestData + bufEmptyTestData.String()
+	} else {
+		testParameters.WantStruct = testParameters.WantStruct + "\n" + bufWantStruct.String()
+		testParameters.AssertTest = testParameters.AssertTest + "\n" + bufAssert.String()
+		testParameters.NilTestData = testParameters.NilTestData + "\n" + bufNilTestData.String()
+		testParameters.EmptyTestData = testParameters.EmptyTestData + "\n" + bufEmptyTestData.String()
+	}
 
 	return nil
 }
@@ -276,6 +283,7 @@ func (g *generator) assembleTest(
 		type want struct {
 			args *{{.Package}}.{{.Struct}}
 			{{.WantStruct}}
+			wantProto *replaceMe.{{.Struct}}
 		}
 	
 		type Context struct {
@@ -289,18 +297,29 @@ func (g *generator) assembleTest(
 		gt.Begin(t,
 			contextInitiateFunction,
 			gt.Run("Get functions return proper value", func(t *testing.T, ctx *Context) {
+				// GET functions
 				{{.AssertTest}}
+
+				// Convert from models to Proto.
+				gotProto := ctx.testData.args.ToProto()
+				assert.Equal(t, ctx.testData.wantProto, gotProto)
+
+				// Then convert from Proto back to model
+				gotModel := models.ProtoToRetentionAvoid(gotProto)
+				assert.Equal(t, ctx.testData.args, gotModel)
 			}).
 				Using("given nil value", func(t *testing.T, ctx *Context) {
 					ctx.testData = &want{
 						args: nil,
 						{{.NilTestData}}
+						wantProto: nil,
 					}
 				}).
 				Using("given empty value", func(t *testing.T, ctx *Context) {
 					ctx.testData = &want{
 						args: &{{.Package}}.{{.Struct}}{},
 						{{.EmptyTestData}}
+						wantProto: &replaceMe.{{.Struct}}{},
 					}
 				}).
 				Using("given NON nil value", func(t *testing.T, ctx *Context) {

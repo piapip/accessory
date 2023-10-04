@@ -2,8 +2,9 @@ package input
 
 import "time"
 
-type RetentionAvoid struct {
-	AvoidWeekend   bool       `bson:"avoid_weekend"`
-	AvoidStartTime *time.Time `bson:"avoid_start_time"`
-	AvoidEndTime   *time.Time `bson:"avoid_end_time"`
+type DeliveryTiming struct {
+	TimeTransition int32      `bson:"time_transition"`
+	Number         *int64     `bson:"number"`
+	TimeUnit       int32      `bson:"time_unit"`
+	DeliveryTime   *time.Time `bson:"delivery_time"`
 }
