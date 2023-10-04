@@ -42,6 +42,21 @@ func (d *DeliveryTiming) GetDeliveryTime() *time.Time {
 	return d.DeliveryTime
 }
 
+// ToProto converts DeliveryTiming to the Protobuf version.
+func (d *DeliveryTiming) ToProto() *replaceMe.DeliveryTiming {
+	if d == nil {
+		return nil
+	}
+
+}
+
+// ProtoToDeliveryTiming converts from Protobuf version to the DeliveryTiming.
+func ProtoToDeliveryTiming(d *replaceMe.DeliveryTiming) *DeliveryTiming {
+	if d == nil {
+		return nil
+	}
+}
+
 func TestDeliveryTiming_GetFunctions(t *testing.T) {
 	type want struct {
 		args               *models.DeliveryTiming
@@ -81,7 +96,7 @@ func TestDeliveryTiming_GetFunctions(t *testing.T) {
 			assert.Equal(t, ctx.testData.wantProto, gotProto)
 
 			// Then convert from Proto back to model
-			gotModel := models.ProtoToRetentionAvoid(gotProto)
+			gotModel := models.ProtoToDeliveryTiming(gotProto)
 			assert.Equal(t, ctx.testData.args, gotModel)
 		}).
 			Using("given nil value", func(t *testing.T, ctx *Context) {

@@ -37,6 +37,7 @@ type methodGenParameters struct {
 }
 
 type testGenParameters struct {
+	Receiver      string
 	Struct        string
 	Package       string
 	WantStruct    string
@@ -78,25 +79,23 @@ func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 		Package: "models",
 	}
 
-	// for iStruct, st := range pkg.Structs {
-	for _, st := range pkg.Structs {
+	for iStruct, st := range pkg.Structs {
 		if st.Name != g.typ {
 			continue
 		}
 
-		// for iField, field := range st.Fields {
-		for _, field := range st.Fields {
+		for iField, field := range st.Fields {
 			if field.Tag == nil {
 				continue
 			}
 
 			params := g.setupParameters(pkg, st, field)
 
-			// // I only generate getters for one struct at the time
-			// // so only check this once
-			// if iStruct == 0 && iField == 0 {
-			// 	testParameters.Struct = params.Struct
-			// }
+			// I only generate getters for one struct at the time
+			// so only check this once
+			if iStruct == 0 && iField == 0 {
+				testParameters.Receiver = params.Receiver
+			}
 
 			if field.Tag.Getter != nil {
 				getter, err := g.generateGetter(params)
@@ -279,6 +278,21 @@ func (g *generator) assembleTest(
 	params *testGenParameters,
 ) (string, error) {
 	var getTestTemplate = `
+	// ToProto converts {{.Struct}} to the Protobuf version.
+	func ({{.Receiver}} *{{.Struct}}) ToProto() *replaceMe.{{.Struct}} {
+		if {{.Receiver}} == nil {
+			return nil
+		}
+
+	}
+
+	// ProtoTo{{.Struct}} converts from Protobuf version to the {{.Struct}}.
+	func ProtoTo{{.Struct}}({{.Receiver}} *replaceMe.{{.Struct}}) *{{.Struct}} {
+		if {{.Receiver}} == nil {
+			return nil
+		}
+	}
+
 	func Test{{.Struct}}_GetFunctions(t *testing.T) {
 		type want struct {
 			args *{{.Package}}.{{.Struct}}
@@ -305,7 +319,7 @@ func (g *generator) assembleTest(
 				assert.Equal(t, ctx.testData.wantProto, gotProto)
 
 				// Then convert from Proto back to model
-				gotModel := models.ProtoToRetentionAvoid(gotProto)
+				gotModel := models.ProtoTo{{.Struct}}(gotProto)
 				assert.Equal(t, ctx.testData.args, gotModel)
 			}).
 				Using("given nil value", func(t *testing.T, ctx *Context) {
