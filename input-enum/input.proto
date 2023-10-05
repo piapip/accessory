@@ -1,0 +1,28 @@
+// TimeUnit is the type of time unit for Delivery timing.
+enum TimeUnit {
+  // TIME_UNIT_UNSPECIFIED.
+  TIME_UNIT_UNSPECIFIED = 0;
+  // TIME_UNIT_SECOND.
+  TIME_UNIT_SECOND = 1;
+  // TIME_UNIT_MINUTE.
+  TIME_UNIT_MINUTE = 2;
+  // TIME_UNIT_HOUR.
+  TIME_UNIT_HOUR = 3;
+  // TIME_UNIT_DAY.
+  TIME_UNIT_DAY = 4;
+}
+
+// TimeUnit is the type of time unit for Delivery timing.
+enum TimeUnit2 {
+  // TIME_UNIT_UNSPECIFIED.
+  TIME_UNIT_UNSPECIFIED = 0;
+  // TIME_UNIT_SECOND.
+  TIME_UNIT_SECOND = 1;
+}
+
+// TimeUnit is the type of time unit for Delivery timing.
+enum TimeUnit3 {
+  // TIME_UNIT_UNSPECIFIED.
+  TIME_UNIT_UNSPECIFIED = 0;
+  // TIME_UNIT_SECOND.
+}

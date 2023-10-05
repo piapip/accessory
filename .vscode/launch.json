@@ -9,15 +9,15 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}",
+            "program": "${workspaceFolder}/generator/struct",
             "args": [
                 "-type",
-                "Tester",
+                "Value",
                 "-output",
-                "result.go",
-                "./input"
+                "result_Value.go",
+                "../../input"
             ],
-            "showLog": true
+            "showLog": true,
         }
     ]
 }

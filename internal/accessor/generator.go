@@ -74,28 +74,24 @@ func Generate(fs afero.Fs, pkg *Package, options ...Option) error {
 	usedPkgs := make([]string, 0, len(pkg.Imports))
 
 	testParameters := &testGenParameters{
-		Struct: pkg.Structs[0].Name,
+		// g.typ = STRUCT_NAME
+		Receiver: strings.ToLower(g.typ),
+		Struct:   g.typ,
 		// this package is hard coded.
 		Package: "models",
 	}
 
-	for iStruct, st := range pkg.Structs {
+	for _, st := range pkg.Structs {
 		if st.Name != g.typ {
 			continue
 		}
 
-		for iField, field := range st.Fields {
+		for _, field := range st.Fields {
 			if field.Tag == nil {
 				continue
 			}
 
 			params := g.setupParameters(pkg, st, field)
-
-			// I only generate getters for one struct at the time
-			// so only check this once
-			if iStruct == 0 && iField == 0 {
-				testParameters.Receiver = params.Receiver
-			}
 
 			if field.Tag.Getter != nil {
 				getter, err := g.generateGetter(params)
@@ -378,6 +374,8 @@ func (g *generator) setupParameters(
 }
 
 func (g *generator) receiverName(structName string) string {
+	fmt.Println("structName: ", structName)
+
 	if g.receiver != "" {
 		// Do nothing if receiver name specified in args.
 		return g.receiver

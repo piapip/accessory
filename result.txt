@@ -1,0 +1,76 @@
+go build ./generator/enum/main.go
+./main -output result.go ./input-enum/input.proto
+./input-enum/input.proto
+result.go
+type TimeUnit int32
+const (
+	// TIME_UNIT_UNSPECIFIED.
+TimeUnitUnspecified TimeUnit = iota
+// TIME_UNIT_SECOND.
+TimeUnitSecond
+// TIME_UNIT_MINUTE.
+TimeUnitMinute
+// TIME_UNIT_HOUR.
+TimeUnitHour
+// TIME_UNIT_DAY.
+TimeUnitDay
+)
+
+func TestTimeUnit_Convert(t *testing.T) {
+	type want struct {
+		args      models.TimeUnit
+		wantProto replaceMe.TimeUnit
+	}
+
+	type Context struct {
+		testData *want
+	}
+
+	contextInitiateFunction := func(t *testing.T) *Context {
+		return &Context{}
+	}
+
+	gt.Begin(t,
+		contextInitiateFunction,
+		gt.Run("Convert from model to Proto and then convert back to model", func(t *testing.T, ctx *Context) {
+			// Convert from model to Proto.
+			gotProto := ctx.testData.args.ToProto()
+			assert.Equal(t, ctx.testData.wantProto, gotProto)
+
+			// Then convert from Proto back to model
+			gotModel := models.ProtoToTimeUnit(gotProto)
+			assert.Equal(t, ctx.testData.args, gotModel)
+		}).
+	).
+		Using("given TimeUnitUnspecified value", func(t *testing.T, ctx *Context) {
+		ctx.testData = &want{
+			args:      models.TimeUnitUnspecified,
+			wantProto: replaceMe.TIME_UNIT_UNSPECIFIED,
+		}
+	}).
+Using("given TimeUnitSecond value", func(t *testing.T, ctx *Context) {
+		ctx.testData = &want{
+			args:      models.TimeUnitSecond,
+			wantProto: replaceMe.TIME_UNIT_SECOND,
+		}
+	}).
+Using("given TimeUnitMinute value", func(t *testing.T, ctx *Context) {
+		ctx.testData = &want{
+			args:      models.TimeUnitMinute,
+			wantProto: replaceMe.TIME_UNIT_MINUTE,
+		}
+	}).
+Using("given TimeUnitHour value", func(t *testing.T, ctx *Context) {
+		ctx.testData = &want{
+			args:      models.TimeUnitHour,
+			wantProto: replaceMe.TIME_UNIT_HOUR,
+		}
+	}).
+Using("given TimeUnitDay value", func(t *testing.T, ctx *Context) {
+		ctx.testData = &want{
+			args:      models.TimeUnitDay,
+			wantProto: replaceMe.TIME_UNIT_DAY,
+		}
+	}),
+}	
+

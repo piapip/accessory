@@ -53,6 +53,8 @@ func (w *writer) write(pkgName string, imports []string, accessors []string) err
 }
 
 func (w *writer) format() ([]byte, error) {
+	// The error "'expected operand, found '=='" may occur if the receiver is empty
+	// fmt.Println(w.buf.String())
 	src, err := format.Source(w.buf.Bytes())
 	if err != nil {
 		return w.buf.Bytes(), err
