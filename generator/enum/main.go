@@ -124,13 +124,13 @@ func Test%s_Convert(t *testing.T) {
 			assert.Equal(t, ctx.testData.wantProto, gotProto)
 
 			// Then convert from Proto back to model
-			gotModel := %s.ProtoToTimeUnit(gotProto)
+			gotModel := %s.ProtoTo%s(gotProto)
 			assert.Equal(t, ctx.testData.args, gotModel)
 		}).
 		%s
 	)
 }	
-`, e.GetTitle(), modelPackage, e.GetTitle(), protoPackage, e.GetTitle(), modelPackage, AssembleTestData(e.GetValues()))
+`, e.GetTitle(), modelPackage, e.GetTitle(), protoPackage, e.GetTitle(), modelPackage, e.Title, AssembleTestData(e.GetValues(), e.Title))
 }
 
 type Value struct {
@@ -224,7 +224,7 @@ func (v *Value) ProtoToEnum(enumTitle string) string {
 		return %s`, protoPackage, enumTitle, v.OriginalStringValue, v.StringValue)
 }
 
-func (v *Value) ToTestData() string {
+func (v *Value) ToTestData(enumTitle string) string {
 	if v == nil {
 		return ""
 	}
@@ -233,9 +233,9 @@ func (v *Value) ToTestData() string {
 		Using("given %s value", func(t *testing.T, ctx *Context) {
 			ctx.testData = &want{
 				args:      %s.%s,
-				wantProto: %s.%s,
+				wantProto: %s.%s_%s,
 			}
-		})`, v.StringValue, modelPackage, v.StringValue, protoPackage, v.OriginalStringValue)
+		})`, v.StringValue, modelPackage, v.StringValue, protoPackage, enumTitle, v.OriginalStringValue)
 }
 
 func ConvertValuesToProtos(values []*Value, enumTitle string) string {
@@ -284,11 +284,11 @@ func ConvertValuesToStruct(values []*Value, enumTitle string) string {
 	return result
 }
 
-func AssembleTestData(values []*Value) string {
+func AssembleTestData(values []*Value, enumTitle string) string {
 	result := ""
 
 	for i, value := range values {
-		result = result + value.ToTestData()
+		result = result + value.ToTestData(enumTitle)
 
 		// if not the final piece of test data, then Using(...).
 		if i != len(values)-1 {
