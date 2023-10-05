@@ -19,9 +19,16 @@ var (
 	caser = cases.Title(language.AmericanEnglish)
 )
 
+const (
+	dir          = "./input-enum/input.proto"
+	protoPackage = "delivery_settings_entities"
+	modelPackage = "models"
+)
+
 type Enum struct {
-	Title  string
-	Values []*Value
+	Title    string
+	Receiver string
+	Values   []*Value
 }
 
 // GetTitle returns the Enum's Title.
@@ -31,6 +38,19 @@ func (e *Enum) GetTitle() string {
 	}
 
 	return e.Title
+}
+
+// GetTitle returns the Enum's Title.
+func (e *Enum) GetReceiver() string {
+	if e == nil {
+		return ""
+	}
+
+	if e.Receiver == "" {
+		e.Receiver = string(strings.ToLower(e.Title)[0])
+	}
+
+	return e.Receiver
 }
 
 // GetValues returns the Enum's Values.
@@ -47,18 +67,45 @@ func (e *Enum) ToString() string {
 		return ""
 	}
 
-	return fmt.Sprintf(`type %s int32
+	return fmt.Sprintf(`
+type %s int32
+
 const (
-	%s
-)`, e.Title, ConvertValuesToString(e.Values, e.Title))
+	%s)`, e.Title, ConvertValuesToStruct(e.Values, e.Title))
+}
+
+func (e *Enum) ToProto() string {
+	if e == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+// ToProto converts the %s to Protobuf version.
+func (%s %s) ToProto() %s.%s {
+	switch %s {%s
+	}
+}`, e.Title, e.GetReceiver(), e.Title, protoPackage, e.Title, e.GetReceiver(), ConvertValuesToProtos(e.Values, e.Title))
+}
+
+func (e *Enum) ProtoToEnum() string {
+	if e == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+// ProtoTo%s converts from Protobuf version to the %s.
+func ProtoTo%s(%s %s.%s) %s {
+	switch %s {%s
+	}
+}`, e.Title, e.Title, e.Title, e.GetReceiver(), protoPackage, e.Title, e.Title, e.GetReceiver(), ConvertValuesToProtoToEnum(e.Values, e.Title))
 }
 
 func (e *Enum) GenerateTest() string {
 	return fmt.Sprintf(`
 func Test%s_Convert(t *testing.T) {
 	type want struct {
-		args      models.%s
-		wantProto replaceMe.%s
+		args      %s.%s
+		wantProto %s.%s
 	}
 
 	type Context struct {
@@ -77,13 +124,13 @@ func Test%s_Convert(t *testing.T) {
 			assert.Equal(t, ctx.testData.wantProto, gotProto)
 
 			// Then convert from Proto back to model
-			gotModel := models.ProtoToTimeUnit(gotProto)
+			gotModel := %s.ProtoToTimeUnit(gotProto)
 			assert.Equal(t, ctx.testData.args, gotModel)
 		}).
 		%s
 	)
 }	
-`, e.GetTitle(), e.GetTitle(), e.GetTitle(), AssembleTestData(e.GetValues()))
+`, e.GetTitle(), modelPackage, e.GetTitle(), protoPackage, e.GetTitle(), modelPackage, AssembleTestData(e.GetValues()))
 }
 
 type Value struct {
@@ -129,18 +176,52 @@ func (v *Value) GetComment() string {
 	return v.Comment
 }
 
-func (v *Value) ToString(enumTitle string) string {
+func (v *Value) ToStruct(enumTitle string) string {
 	if v == nil {
 		return ""
 	}
 
 	if v.NumberValue == 0 {
 		return fmt.Sprintf(`%s
-%s %s = iota`, v.Comment, v.StringValue, enumTitle)
+	%s %s = iota
+`, v.Comment, v.StringValue, enumTitle)
 	}
 
 	return fmt.Sprintf(`%s
-%s`, v.Comment, v.StringValue)
+	%s
+`, v.Comment, v.StringValue)
+}
+
+func (v *Value) ToProto(enumTitle string) string {
+	if v == nil {
+		return ""
+	}
+
+	if v.NumberValue == 0 {
+		return fmt.Sprintf(`
+	default:
+		return %s.%s_%s`, protoPackage, enumTitle, v.OriginalStringValue)
+	}
+
+	return fmt.Sprintf(`
+	case %s:
+		return %s.%s_%s`, v.StringValue, protoPackage, enumTitle, v.OriginalStringValue)
+}
+
+func (v *Value) ProtoToEnum(enumTitle string) string {
+	if v == nil {
+		return ""
+	}
+
+	if v.NumberValue == 0 {
+		return fmt.Sprintf(`
+	default:
+		return %s`, v.StringValue)
+	}
+
+	return fmt.Sprintf(`
+	case %s.%s_%s:
+		return %s`, protoPackage, enumTitle, v.OriginalStringValue, v.StringValue)
 }
 
 func (v *Value) ToTestData() string {
@@ -151,21 +232,53 @@ func (v *Value) ToTestData() string {
 	return fmt.Sprintf(`
 		Using("given %s value", func(t *testing.T, ctx *Context) {
 			ctx.testData = &want{
-				args:      models.%s,
-				wantProto: replaceMe.%s,
+				args:      %s.%s,
+				wantProto: %s.%s,
 			}
-		})`, v.StringValue, v.StringValue, v.OriginalStringValue)
+		})`, v.StringValue, modelPackage, v.StringValue, protoPackage, v.OriginalStringValue)
 }
 
-func ConvertValuesToString(values []*Value, enumTitle string) string {
+func ConvertValuesToProtos(values []*Value, enumTitle string) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	result := ""
+
+	for i, value := range values {
+		if i != 0 {
+			result = result + value.ToProto(enumTitle)
+		}
+	}
+
+	result = result + values[0].ToProto(enumTitle)
+
+	return result
+}
+
+func ConvertValuesToProtoToEnum(values []*Value, enumTitle string) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	result := ""
+
+	for i, value := range values {
+		if i != 0 {
+			result = result + value.ProtoToEnum(enumTitle)
+		}
+	}
+
+	result = result + values[0].ProtoToEnum(enumTitle)
+
+	return result
+}
+
+func ConvertValuesToStruct(values []*Value, enumTitle string) string {
 	result := ""
 
 	for _, value := range values {
-		if result == "" {
-			result = value.ToString(enumTitle)
-		} else {
-			result = result + "\n" + value.ToString(enumTitle)
-		}
+		result = result + value.ToStruct(enumTitle)
 	}
 
 	return result
@@ -199,8 +312,6 @@ func checkErr(e error) {
 func main() {
 	log.SetFlags(0 | log.Lshortfile)
 
-	dir := "./input-enum/input.proto"
-
 	bytes, err := os.ReadFile(dir)
 	if err != nil {
 		fmt.Println(err)
@@ -220,10 +331,10 @@ func main() {
 		w := bufio.NewWriter(f)
 
 		result := fmt.Sprintf(`package input_enum
-
 		%s
-
-		%s`, enum.ToString(), enum.GenerateTest())
+		%s
+		%s
+		%s`, enum.ToString(), enum.ToProto(), enum.ProtoToEnum(), enum.GenerateTest())
 
 		_, err = w.WriteString(result)
 		checkErr(err)

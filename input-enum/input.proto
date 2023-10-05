@@ -1,28 +1,14 @@
-// TimeUnit is the type of time unit for Delivery timing.
-enum TimeUnit {
-  // TIME_UNIT_UNSPECIFIED.
-  TIME_UNIT_UNSPECIFIED = 0;
-  // TIME_UNIT_SECOND.
-  TIME_UNIT_SECOND = 1;
-  // TIME_UNIT_MINUTE.
-  TIME_UNIT_MINUTE = 2;
-  // TIME_UNIT_HOUR.
-  TIME_UNIT_HOUR = 3;
-  // TIME_UNIT_DAY.
-  TIME_UNIT_DAY = 4;
-}
-
-// TimeUnit is the type of time unit for Delivery timing.
-enum TimeUnit2 {
-  // TIME_UNIT_UNSPECIFIED.
-  TIME_UNIT_UNSPECIFIED = 0;
-  // TIME_UNIT_SECOND.
-  TIME_UNIT_SECOND = 1;
-}
-
-// TimeUnit is the type of time unit for Delivery timing.
-enum TimeUnit3 {
-  // TIME_UNIT_UNSPECIFIED.
-  TIME_UNIT_UNSPECIFIED = 0;
-  // TIME_UNIT_SECOND.
+// RetentionGroupEvent is the type of Retention Group event.
+enum RetentionGroupEvent {
+  // RETENTION_GROUP_EVENT_UNSPECIFIED.
+  RETENTION_GROUP_EVENT_UNSPECIFIED = 0;
+  // RETENTION_GROUP_EVENT_INFLOW represents the retention for the event
+  // when the end user has the first interaction with our chatbot.
+  RETENTION_GROUP_EVENT_INFLOW = 1;
+  // RETENTION_GROUP_EVENT_TAGGING represents the retention for the event
+  // when the end user submit some data that we store in the EndUserProfile (common.EndUser).
+  RETENTION_GROUP_EVENT_TAGGING = 2;
+  // RETENTION_GROUP_EVENT_CONVERSION represents the retention for the event
+  // when the end user makes a CV by using our system.
+  RETENTION_GROUP_EVENT_CONVERSION = 3;
 }
