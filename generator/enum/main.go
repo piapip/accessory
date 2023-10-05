@@ -182,9 +182,19 @@ func (v *Value) ToStruct(enumTitle string) string {
 	}
 
 	if v.NumberValue == 0 {
+		if v.Comment == "" {
+			return fmt.Sprintf(`%s %s = iota
+`, v.StringValue, enumTitle)
+		}
+
 		return fmt.Sprintf(`%s
 	%s %s = iota
 `, v.Comment, v.StringValue, enumTitle)
+	}
+
+	if v.Comment == "" {
+		return fmt.Sprintf(`%s
+`, v.StringValue)
 	}
 
 	return fmt.Sprintf(`%s

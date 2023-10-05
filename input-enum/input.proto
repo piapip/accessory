@@ -1,14 +1,8 @@
-// RetentionGroupEvent is the type of Retention Group event.
-enum RetentionGroupEvent {
-  // RETENTION_GROUP_EVENT_UNSPECIFIED.
-  RETENTION_GROUP_EVENT_UNSPECIFIED = 0;
-  // RETENTION_GROUP_EVENT_INFLOW represents the retention for the event
-  // when the end user has the first interaction with our chatbot.
-  RETENTION_GROUP_EVENT_INFLOW = 1;
-  // RETENTION_GROUP_EVENT_TAGGING represents the retention for the event
-  // when the end user submit some data that we store in the EndUserProfile (common.EndUser).
-  RETENTION_GROUP_EVENT_TAGGING = 2;
-  // RETENTION_GROUP_EVENT_CONVERSION represents the retention for the event
-  // when the end user makes a CV by using our system.
-  RETENTION_GROUP_EVENT_CONVERSION = 3;
+// ReminderToggleState represents status of Reminder.
+// Refer: https://www.figma.com/file/9fnSU54chbkuL6vp7KIlo8/Recurring-Messages?type=design&node-id=1402-162782&mode=design&t=1yu0008H9qT4nBhT-0
+enum ReminderToggleState {
+  REMINDER_STATE_UNSPECIFIED = 0;
+  REMINDER_STATE_STARTED = 1;
+  REMINDER_STATE_RUNNING = 2;
+  REMINDER_STATE_STOPPED = 3;
 }
